@@ -15,7 +15,11 @@ module.exports.createCard = (req, res) => {
     .then((card) => res.send({ data: card }))
     // eslint-disable-next-line no-unused-vars
     .catch((err) => {
-      res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорректные данные при создании карточки.' });
+      if (err.name === 'ValidationError') {
+        res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорректные данные при создании карточки.' });
+      } else {
+        res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' });
+      }
     });
 };
 
@@ -29,7 +33,13 @@ module.exports.deleteCard = (req, res) => {
     .then((card) => res.send({ data: card }))
     // eslint-disable-next-line no-unused-vars
     .catch((err) => {
-      res.status(NOT_FOUND_ERROR_CODE).send({ message: `Карточка с указаным id:${req.params.cardId} не найдена` });
+      if (err.statusCode === NOT_FOUND_ERROR_CODE) {
+        res.status(NOT_FOUND_ERROR_CODE).send({ message: `Карточка с указаным id:${req.params.cardId} не найдена` });
+      } else if (err.name === 'CastError') {
+        res.status(VALIDATE_ERROR_CODE).send({ message: 'Передан некорректный id карточки' });
+      } else {
+        res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' });
+      }
     });
 };
 
@@ -46,7 +56,7 @@ module.exports.likeCard = (req, res) => {
     })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.statusCode !== NOT_FOUND_ERROR_CODE) {
+      if (err.name === 'CastError') {
         res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорректные данные для постановки лайка.' });
       } else if (err.statusCode === NOT_FOUND_ERROR_CODE) {
         res.status(NOT_FOUND_ERROR_CODE).send({ message: `Передан несущетвующий id:${req.params._id} карточки` });
@@ -69,7 +79,7 @@ module.exports.dislikeCard = (req, res) => {
     })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
-      if (err.statusCode !== NOT_FOUND_ERROR_CODE) {
+      if (err.name === 'CastError') {
         res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорректные данные для снятия лайка.' });
       } else if (err.statusCode === NOT_FOUND_ERROR_CODE) {
         res.status(NOT_FOUND_ERROR_CODE).send({ message: `Передан несущетвующий id:${req.params._id} карточки` });

@@ -18,7 +18,13 @@ module.exports.getUser = (req, res) => {
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      res.status(NOT_FOUND_ERROR_CODE).send({ message: `Пользователь по указаному id:${req.params.userId} не найден.` });
+      if (err.statusCode === NOT_FOUND_ERROR_CODE) {
+        res.status(NOT_FOUND_ERROR_CODE).send({ message: `Пользователь по указаному id:${req.params.userId} не найден.` });
+      } else if (err.name === 'CastError') {
+        res.status(VALIDATE_ERROR_CODE).send({ message: 'Передан неккоректный id' });
+      } else {
+        res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' });
+      }
     });
 };
 
@@ -27,13 +33,17 @@ module.exports.postUser = (req, res) => {
   User.create({ name, about, avatar })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорректные данные при создании пользователя.' });
+      if (err.name === 'ValidationError') {
+        res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорректные данные при создании пользователя.' });
+      } else {
+        res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' });
+      }
     });
 };
 
 module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user.id, { name, about }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
     .orFail(() => {
       const error = new Error();
       error.statusCode = 404;
@@ -41,7 +51,7 @@ module.exports.updateUser = (req, res) => {
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.statusCode !== NOT_FOUND_ERROR_CODE) {
+      if (err.statusCode === 'ValidationError') {
         res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорктные данные при обновлении профиля' });
       } else if (err.statusCode === NOT_FOUND_ERROR_CODE) {
         res.status(NOT_FOUND_ERROR_CODE).send({ message: `Пользователь по указаному id:${req.user._id} не найден.` });
@@ -61,7 +71,7 @@ module.exports.updateAvatar = async (req, res) => {
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.statusCode !== NOT_FOUND_ERROR_CODE) {
+      if (err.name === 'ValidationError') {
         res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорктные данные при обновлении аватара' });
       } else if (err.statusCode === NOT_FOUND_ERROR_CODE) {
         res.status(NOT_FOUND_ERROR_CODE).send({ message: `Пользователь по указаному id:${req.user._id} не найден.` });

@@ -23,6 +23,10 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
+app.use((req, res) => {
+  res.status(404).send({ message: 'Страница не существует' });
+});
+
 app.listen(PORT, () => {
   // Если всё работает, консоль покажет, какой порт приложение слушает
   // eslint-disable-next-line no-console
