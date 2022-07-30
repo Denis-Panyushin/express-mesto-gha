@@ -51,7 +51,7 @@ module.exports.updateUser = (req, res) => {
     })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
-      if (err.statusCode === 'ValidationError') {
+      if (err.name === 'ValidationError') {
         res.status(VALIDATE_ERROR_CODE).send({ message: 'Переданы некорктные данные при обновлении профиля' });
       } else if (err.statusCode === NOT_FOUND_ERROR_CODE) {
         res.status(NOT_FOUND_ERROR_CODE).send({ message: `Пользователь по указаному id:${req.user._id} не найден.` });
