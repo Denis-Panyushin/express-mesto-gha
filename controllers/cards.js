@@ -24,23 +24,25 @@ module.exports.createCard = (req, res) => {
 };
 
 module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .orFail(() => {
-      const error = new Error();
-      error.statusCode = 404;
-      throw error;
-    })
-    .then((card) => res.send({ data: card }))
-    // eslint-disable-next-line no-unused-vars
-    .catch((err) => {
-      if (err.statusCode === NOT_FOUND_ERROR_CODE) {
-        res.status(NOT_FOUND_ERROR_CODE).send({ message: `Карточка с указаным id:${req.params.cardId} не найдена` });
-      } else if (err.name === 'CastError') {
-        res.status(VALIDATE_ERROR_CODE).send({ message: 'Передан некорректный id карточки' });
-      } else {
-        res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' });
-      }
-    });
+  if (req.params.owner._id === req.user._id) {
+    Card.findByIdAndRemove(req.params.cardId)
+      .orFail(() => {
+        const error = new Error();
+        error.statusCode = 404;
+        throw error;
+      })
+      .then((card) => res.send({ data: card }))
+      // eslint-disable-next-line no-unused-vars
+      .catch((err) => {
+        if (err.statusCode === NOT_FOUND_ERROR_CODE) {
+          res.status(NOT_FOUND_ERROR_CODE).send({ message: `Карточка с указаным id:${req.params.cardId} не найдена` });
+        } else if (err.name === 'CastError') {
+          res.status(VALIDATE_ERROR_CODE).send({ message: 'Передан некорректный id карточки' });
+        } else {
+          res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' });
+        }
+      });
+  }
 };
 
 module.exports.likeCard = (req, res) => {
