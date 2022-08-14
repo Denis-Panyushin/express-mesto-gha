@@ -32,6 +32,8 @@ app.post('/signup', celebrate({
   }).unknown(true),
 }), postUser);
 
+app.use(auth);
+
 app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
@@ -54,8 +56,6 @@ app.use((err, req, res, next) => {
     });
   next();
 });
-
-app.use(auth);
 
 app.listen(PORT, () => {
   // Если всё работает, консоль покажет, какой порт приложение слушает

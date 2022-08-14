@@ -5,17 +5,16 @@ const Card = require('../models/card');
 
 const { VALIDATE_ERROR_CODE, NOT_FOUND_ERROR_CODE, DEFAULT_ERROR_CODE } = require('../utils/constants');
 
-module.exports.getCards = (req, res) => {
+module.exports.getCards = (req, res, next) => {
   Card.find({})
     .then((cards) => res.send({ data: cards }))
-    .catch((err) => res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' }));
+    .catch(next);
 };
 
 module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.send({ data: card }))
-    // eslint-disable-next-line no-unused-vars
     .catch((err) => {
       if (err.name === 'ValidationError') {
         throw new ValidationError('Переданы некорректные данные при создании карточки.');
@@ -24,24 +23,18 @@ module.exports.createCard = (req, res, next) => {
     .catch(next);
 };
 
-module.exports.deleteCard = (req, res) => {
+module.exports.deleteCard = (req, res, next) => {
   if (req.params.owner._id === req.user._id) {
     Card.findByIdAndRemove(req.params.cardId)
-      .orFail(() => {
-        const error = new Error();
-        error.statusCode = 404;
-        throw error;
-      })
       .then((card) => res.send({ data: card }))
       .catch((err) => {
         if (err.statusCode === NOT_FOUND_ERROR_CODE) {
-          res.status(NOT_FOUND_ERROR_CODE).send({ message: `Карточка с указаным id:${req.params.cardId} не найдена` });
+          throw new NotFoundError(`Карточка с указаным id:${req.params.cardId} не найдена`);
         } else if (err.name === 'CastError') {
-          res.status(VALIDATE_ERROR_CODE).send({ message: 'Передан некорректный id карточки' });
-        } else {
-          res.status(DEFAULT_ERROR_CODE).send({ message: 'Произошла ошибка' });
+          throw new ValidationError('Передан некорректный id карточки');
         }
-      });
+      })
+      .catch(next);
   }
 };
 
@@ -68,11 +61,6 @@ module.exports.dislikeCard = (req, res, next) => {
     { $pull: { likes: req.user._id } },
     { new: true },
   )
-    .orFail(() => {
-      const error = new Error();
-      error.statusCode = 404;
-      throw error;
-    })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'CastError') {
