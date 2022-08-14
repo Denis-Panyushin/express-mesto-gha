@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const { celebrate, Joi, errors } = require('celebrate');
 const { postUser, login } = require('./controllers/users');
 const auth = require('./middlewares/auth');
 
@@ -16,7 +17,12 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 });
 
 app.post('/signin', login);
-app.post('/signup', postUser);
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required.email(),
+    password: Joi.string().required().min(8),
+  }).unknown(true),
+}), postUser);
 
 app.use(auth);
 
@@ -26,6 +32,8 @@ app.use('/', require('./routes/cards'));
 app.use((req, res) => {
   res.status(404).send({ message: 'Страница не существует' });
 });
+
+app.use(errors());
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
