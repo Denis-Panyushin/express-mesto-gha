@@ -5,6 +5,7 @@ const User = require('../models/user');
 const ValidationError = require('../errors/ValidationError');
 const NotFoundError = require('../errors/NotFoundError');
 
+const { JWT_SECRET = 'dev-key' } = process.env;
 const { NOT_FOUND_ERROR_CODE } = require('../utils/constants');
 
 module.exports.getUsers = (req, res, next) => {
@@ -14,7 +15,7 @@ module.exports.getUsers = (req, res, next) => {
 };
 
 module.exports.getUser = (req, res, next) => {
-  User.findById(req.params._id)
+  User.findById(req.params.userId)
     .orFail(() => {
       const error = new Error();
       error.statusCode = 404;
@@ -31,20 +32,20 @@ module.exports.getUser = (req, res, next) => {
     .catch(next);
 };
 
-module.exports.getUserMe = (req, res, next) => {
-  User.findOne({ _id: req.user._id })
+module.exports.getMe = (req, res, next) => {
+  const { _id } = req.user;
+
+  User.findOne({ _id })
     .orFail(() => {
       const error = new Error();
       error.statusCode = 404;
       throw error;
     })
     .then((user) => {
-      res.status(200).send(user);
+      res.send(user);
     })
     .catch((err) => {
-      if (err.statusCode === NOT_FOUND_ERROR_CODE) {
-        throw new NotFoundError(`Пользователь по указаному id:${req.params.userId} не найден.`);
-      } else if (err.name === 'CastError') {
+      if (err.name === 'CastError') {
         throw new ValidationError('Передан неккоректный id');
       }
     })
@@ -59,7 +60,13 @@ module.exports.postUser = (req, res, next) => {
     .then((hash) => User.create({
       name, about, avatar, email, password: hash,
     }))
-    .then((user) => res.send({ data: user }))
+    .then((user) => res.send({
+      _id: user._id,
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+    }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         throw new ValidationError('Переданы некорректные данные при создании пользователя.');
@@ -113,7 +120,7 @@ module.exports.login = (req, res, next) => {
 
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
       res.cookie('token', token);
       res.status(200).send({ token });
     })

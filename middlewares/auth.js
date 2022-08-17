@@ -1,22 +1,19 @@
 const jwt = require('jsonwebtoken');
+const NoAuthorization = require('../errors/NoAuthorization');
 
-const handleAuthError = (res) => {
-  res
-    .status(401)
-    .send({ message: 'Необходима авторизация' });
-};
+const { JWT_SECRET = 'dev-key' } = process.env;
 
 module.exports = (req, res, next) => {
   const { authorization } = req.headers;
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return handleAuthError(res);
+    next(new NoAuthorization('Необходима авторизация'));
   }
   const token = authorization.replace('Bearer ', '');
   let payload;
   try {
-    payload = jwt.verify(token, 'some-secret-key', { expiresIn: '7d' });
+    payload = jwt.verify(token, JWT_SECRET, { expiresIn: '7d' });
   } catch (err) {
-    return handleAuthError(res);
+    next(new NoAuthorization('Необходима авторизация'));
   }
 
   req.user = payload;
