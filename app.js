@@ -5,6 +5,7 @@ const { errors } = require('celebrate');
 const auth = require('./middlewares/auth');
 const authorization = require('./routes/authorization');
 const NotFoundError = require('./errors/NotFoundError');
+const { NOT_FOUND_ERROR_CODE } = require('./utils/constants');
 
 const { PORT = 3000 } = process.env;
 
@@ -24,6 +25,11 @@ app.use(auth);
 app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
+app.use((req, res, err, next) => {
+  res.status(NOT_FOUND_ERROR_CODE).send(new NotFoundError('Страница не сущетсвует'));
+  next();
+});
+
 app.use(errors());
 
 app.use((err, req, res, next) => {
@@ -38,10 +44,6 @@ app.use((err, req, res, next) => {
         : message,
     });
   next();
-});
-
-app.use((req, res, err, next) => {
-  next(new NotFoundError('Страница не существует'));
 });
 
 app.listen(PORT, () => {

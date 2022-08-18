@@ -1,9 +1,10 @@
 /* eslint-disable no-unused-vars */
 const NotFoundError = require('../errors/NotFoundError');
 const ValidationError = require('../errors/ValidationError');
+const NoCopyrightError = require('../errors/NoCopyrightError');
 const Card = require('../models/card');
 
-const { VALIDATE_ERROR_CODE, NOT_FOUND_ERROR_CODE, DEFAULT_ERROR_CODE } = require('../utils/constants');
+const { NOT_FOUND_ERROR_CODE } = require('../utils/constants');
 
 module.exports.getCards = (req, res, next) => {
   Card.find({})
@@ -24,32 +25,41 @@ module.exports.createCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  if (req.params.owner._id === req.user._id) {
-    Card.findByIdAndRemove(req.params.cardId)
-      .then((card) => res.send({ data: card }))
-      .catch((err) => {
-        if (err.statusCode === NOT_FOUND_ERROR_CODE) {
-          throw new NotFoundError(`Карточка с указаным id:${req.params.cardId} не найдена`);
-        } else if (err.name === 'CastError') {
-          throw new ValidationError('Передан некорректный id карточки');
-        }
-      })
-      .catch(next);
-  }
+  Card.findByIdAndRemove(req.params.cardId)
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError(`Карточка с указаным id:${req.params.cardId} не найдена`);
+      }
+      if (String(card.owner) !== req.user._id) {
+        throw new NoCopyrightError('Нельзя удалить чужую карточку');
+      }
+      res.send({ data: card });
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        throw new ValidationError('Передан некорректный id карточки');
+      }
+    })
+    .catch(next);
 };
 
 module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
-    { new: true },
+    { new: true, runValidators: true },
   )
+    .orFail(() => {
+      const error = new Error();
+      error.statusCode = 404;
+      throw error;
+    })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'CastError') {
         throw new ValidationError('Переданы некорректные данные для постановки лайка.');
       } else if (err.statusCode === NOT_FOUND_ERROR_CODE) {
-        throw new NotFoundError(`Передан несущетвующий id:${req.params._id} карточки`);
+        throw new NotFoundError(`Передан несущетвующий id:${req.params.cardId} карточки`);
       }
     })
     .catch(next);
@@ -59,8 +69,13 @@ module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
-    { new: true },
+    { new: true, runValidators: true },
   )
+    .orFail(() => {
+      const error = new Error();
+      error.statusCode = 404;
+      throw error;
+    })
     .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err.name === 'CastError') {
