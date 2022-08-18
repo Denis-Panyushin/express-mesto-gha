@@ -23,11 +23,6 @@ app.use(auth);
 app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
-app.use((req, res, err, next) => {
-  res.status(404).send({ message: 'Страница не существует' });
-  next();
-});
-
 app.use(errors());
 
 app.use((err, req, res, next) => {
@@ -41,6 +36,11 @@ app.use((err, req, res, next) => {
         ? 'На сервере произошла ошибка'
         : message,
     });
+  next();
+});
+
+app.use((req, res, err, next) => {
+  res.status(404).send({ message: 'Страница не существует' });
   next();
 });
 
