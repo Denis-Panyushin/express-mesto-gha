@@ -24,11 +24,11 @@ app.use(auth);
 app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
+app.use(errors());
+
 app.use((req, res, err, next) => {
   next(new NotFoundError('Страница не существует'));
 });
-
-app.use(errors());
 
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
