@@ -28,9 +28,9 @@ module.exports.createCard = (req, res, next) => {
 module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
-      if (!card) {
+      if (card._id !== req.params.cardId) {
         throw new NotFoundError(`Карточка с указаным id:${req.params.cardId} не найдена`);
-      } else if (String(card.owner) !== req.user._id) {
+      } else if (card.owner._id !== req.user._id) {
         throw new NoCopyrightError('Нельзя удалить чужую карточку');
       } else {
         res.send({ data: card });
