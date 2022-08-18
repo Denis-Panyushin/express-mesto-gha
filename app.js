@@ -24,13 +24,13 @@ app.use(auth);
 app.use('/', require('./routes/users'));
 app.use('/', require('./routes/cards'));
 
+app.use(errors());
+
 app.use((req, res, err, next) => {
   if (res.status(404)) {
     next(new NotFoundError('Страница не найдена'));
   }
 });
-
-app.use(errors());
 
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
