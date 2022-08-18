@@ -1,8 +1,7 @@
-/* eslint-disable no-unused-vars */
+const Card = require('../models/card');
 const NotFoundError = require('../errors/NotFoundError');
 const ValidationError = require('../errors/ValidationError');
 const NoCopyrightError = require('../errors/NoCopyrightError');
-const Card = require('../models/card');
 
 const { NOT_FOUND_ERROR_CODE } = require('../utils/constants');
 
@@ -27,18 +26,22 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
+    .orFail(() => {
+      const error = new Error();
+      error.statusCode = 404;
+      throw error;
+    })
     .then((card) => {
-      if (card._id !== req.params.cardId) {
-        throw new NotFoundError(`Карточка с указаным id:${req.params.cardId} не найдена`);
-      } else if (card.owner._id !== req.user._id) {
+      if (card.owner._id !== req.user._id) {
         throw new NoCopyrightError('Нельзя удалить чужую карточку');
-      } else {
-        res.send({ data: card });
       }
+      res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
         throw new ValidationError('Передан некорректный id карточки');
+      } else if (err.statusCode === NOT_FOUND_ERROR_CODE) {
+        throw new NotFoundError(`Передан несущетвующий id:${req.params.cardId} карточки`);
       }
     })
     .catch(next);
