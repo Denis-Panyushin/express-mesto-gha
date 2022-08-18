@@ -32,7 +32,7 @@ module.exports.deleteCard = (req, res, next) => {
       throw error;
     })
     .then((card) => {
-      if (String(card.owner) !== req.user._id) {
+      if (String(card.owner._id) !== req.user._id) {
         throw new NoCopyrightError('Нельзя удалить чужую карточку');
       } else {
         res.send({ data: card });
