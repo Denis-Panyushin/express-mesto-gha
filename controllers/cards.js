@@ -30,11 +30,11 @@ module.exports.deleteCard = (req, res, next) => {
     .then((card) => {
       if (!card) {
         throw new NotFoundError(`Карточка с указаным id:${req.params.cardId} не найдена`);
-      }
-      if (String(card.owner) !== req.user._id) {
+      } else if (String(card.owner) !== req.user._id) {
         throw new NoCopyrightError('Нельзя удалить чужую карточку');
+      } else {
+        res.send({ data: card });
       }
-      res.send({ data: card });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
