@@ -32,7 +32,8 @@ module.exports.deleteCard = (req, res, next) => {
       throw error;
     })
     .then((card) => {
-      if (card.owner === req.user._id) {
+      const cardOwnerId = card.owner._id;
+      if (cardOwnerId === req.user._id) {
         res.send({ data: card });
       } else {
         throw new NoCopyrightError('Нельзя удалить чужую карточку');
