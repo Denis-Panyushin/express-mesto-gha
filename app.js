@@ -26,12 +26,6 @@ app.use('/', require('./routes/cards'));
 
 app.use(errors());
 
-app.use((req, res, err, next) => {
-  if (res.status(404)) {
-    next(new NotFoundError('Страница не найдена'));
-  }
-});
-
 app.use((err, req, res, next) => {
   const { statusCode = 500, message } = err;
 
@@ -44,6 +38,12 @@ app.use((err, req, res, next) => {
         : message,
     });
   next();
+});
+
+app.use((req, res, err, next) => {
+  if (res.status(404)) {
+    next(new NotFoundError('Страница не найдена'));
+  }
 });
 
 app.listen(PORT, () => {
